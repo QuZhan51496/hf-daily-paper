@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title }} - HF Daily Papers{% endblock %}
+{% block content %}
+<div class="detail-container">
+    <a href="/?date={{ paper.date }}" class="btn btn-sm">&larr; 返回列表</a>
+
+    <h1 class="detail-title">{{ paper.title }}</h1>
+
+    <div class="detail-authors">
+        {% for a in paper.authors %}
+        <span class="author">{{ a }}</span>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if paper.keywords %}
+    <div class="paper-keywords">
+        {% for k in paper.keywords %}
+        <span class="keyword">{{ k }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="detail-meta">
+        <span class="meta-item">👍 {{ paper.upvotes }}</span>
+        <span class="meta-item">💬 {{ paper.num_comments }}</span>
+        {% if paper.github_stars %}
+        <span class="meta-item">⭐ {{ paper.github_stars }}</span>
+        {% endif %}
+        <span class="meta-item">📅 {{ paper.date }}</span>
+    </div>
+
+    <div class="detail-links">
+        <a href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank" class="btn btn-sm">arXiv</a>
+        <a href="https://arxiv.org/pdf/{{ paper.arxiv_id }}" target="_blank" class="btn btn-sm">PDF</a>
+        {% if paper.github_repo %}
+        <a href="{{ paper.github_repo }}" target="_blank" class="btn btn-sm">GitHub</a>
+        {% endif %}
+        {% if paper.project_page %}
+        <a href="{{ paper.project_page }}" target="_blank" class="btn btn-sm">Project</a>
+        {% endif %}
+    </div>
+
+    {% if paper.thumbnail_url %}
+    <div class="detail-thumb">
+        <img src="{{ paper.thumbnail_url }}" alt="{{ paper.title }}">
+    </div>
+    {% endif %}
+
+    <section class="detail-section">
+        <h2>LLM 深度分析</h2>
+        <div id="detail-analysis" class="markdown-body">
+            {% if paper.llm_summary_status == 'completed' and paper.llm_summary %}
+                <div class="summary-box" id="llm-raw" style="display:none">{{ paper.llm_summary }}</div>
+                <div class="summary-box" id="llm-rendered"></div>
+            {% else %}
+                <p class="summary-pending" id="analysis-loading">正在生成深度分析，请稍候...</p>
+            {% endif %}
+        </div>
+        <button class="btn btn-sm" id="btn-regenerate" style="margin-top: 0.5rem;" onclick="regenerateDetail({{ paper.id }})">🔄 重新生成</button>
+    </section>
+
+    <section class="detail-section">
+        <h2>原文摘要 (Abstract)</h2>
+        <div class="abstract-box">{{ paper.abstract }}</div>
+    </section>
+
+    {% if paper.hf_ai_summary %}
+    <section class="detail-section">
+        <h2>HF AI 摘要</h2>
+        <div class="abstract-box">{{ paper.hf_ai_summary }}</div>
+    </section>
+    {% endif %}
+</div>
+
+<script>
+function renderMarkdown(text) {
+    // 先用 marked 渲染 markdown
+    let html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g, '<br>');
+    // 再渲染 LaTeX 公式
+    if (typeof katex !== 'undefined') {
+        // 块级公式 $$...$$
+        html = html.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
+            try { return katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }); }
+            catch { return _; }
+        });
+        // 行内公式 $...$（不匹配 $$）
+        html = html.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
+            try { return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }); }
+            catch { return _; }
+        });
+    }
+    return html;
+}
+
+(function() {
+    const paperId = {{ paper.id }};
+    const status = "{{ paper.llm_summary_status }}";
+    const analysisDiv = document.getElementById("detail-analysis");
+
+    // 渲染已有的服务端内容
+    const rawEl = document.getElementById("llm-raw");
+    const renderedEl = document.getElementById("llm-rendered");
+    if (rawEl && renderedEl) {
+        renderedEl.innerHTML = renderMarkdown(rawEl.textContent);
+    }
+
+    if (status === "completed") {
+        return;
+    }
+
+    // 自动触发生成
+    fetch(`/api/generate_detail/${paperId}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            if (data.summary) {
+                analysisDiv.innerHTML = `<div class="summary-box">${renderMarkdown(data.summary)}</div>`;
+            } else {
+                analysisDiv.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
+            }
+        })
+        .catch(() => {
+            analysisDiv.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
+        });
+})();
+
+function regenerateDetail(paperId) {
+    const div = document.getElementById("detail-analysis");
+    const btn = document.getElementById("btn-regenerate");
+    div.innerHTML = `<p class="summary-pending">正在重新生成深度分析...</p>`;
+    btn.disabled = true;
+    fetch(`/api/resummarize/${paperId}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            if (data.summary) {
+                div.innerHTML = `<div class="summary-box">${renderMarkdown(data.summary)}</div>`;
+            } else {
+                div.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            div.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
+        });
+}
+</script>
+{% endblock %}

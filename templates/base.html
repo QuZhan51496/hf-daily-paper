@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HF Daily Papers{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">📄 HF Daily Papers</a>
+            <span class="subtitle">每日 AI 论文精选摘要</span>
+            {% block header_right %}{% endblock %}
+            <a href="/setup" class="btn btn-sm header-settings" title="设置">⚙ 设置</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>Powered by <a href="https://huggingface.co/papers" target="_blank">Hugging Face</a> + LLM</p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}HF Daily Papers - {{ current_date }}{% endblock %}
+{% block header_right %}
+<div class="header-date-nav">
+    <a href="/?date={{ prev_date }}" class="btn btn-sm">&larr; 前一天</a>
+    <input type="date" id="date-picker" value="{{ current_date }}">
+    <span class="paper-count">{{ paper_count }} 篇</span>
+    <a href="/?date={{ next_date }}" class="btn btn-sm">后一天 &rarr;</a>
+</div>
+{% endblock %}
+{% block content %}
+
+{% if paper_count == 0 %}
+<div class="empty-state">
+    <p id="fetch-msg" class="msg">正在自动抓取该日论文...</p>
+</div>
+{% else %}
+<div class="paper-grid">
+    {% for p in papers %}
+    <article class="paper-card">
+        {% if p.thumbnail_url %}
+        <div class="paper-thumb">
+            <img src="{{ p.thumbnail_url }}" alt="{{ p.title }}" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="paper-body">
+            <h2 class="paper-title">
+                <a href="/paper/{{ p.arxiv_id }}?date={{ current_date }}">{{ p.title }}</a>
+            </h2>
+            <div class="paper-authors">
+                {% for a in p.authors[:3] %}
+                <span class="author">{{ a }}</span>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+                {% if p.authors|length > 3 %}
+                <span class="author-more">+{{ p.authors|length - 3 }} more</span>
+                {% endif %}
+            </div>
+            {% if p.keywords %}
+            <div class="paper-keywords">
+                {% for k in p.keywords[:5] %}
+                <span class="keyword">{{ k }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="paper-summary" id="brief-{{ p.id }}">
+                {% if p.brief_summary_status == 'completed' and p.brief_summary %}
+                    <p>{{ p.brief_summary }}</p>
+                {% elif p.brief_summary_status == 'pending' %}
+                    <p class="summary-pending">概要生成中...</p>
+                {% else %}
+                    <p class="summary-failed">概要生成失败</p>
+                {% endif %}
+                <button class="btn btn-sm btn-regen" onclick="regenerateBrief({{ p.id }}, this)" title="重新生成概要">🔄 重新生成</button>
+            </div>
+            <div class="paper-meta">
+                <span class="meta-item" title="Upvotes">👍 {{ p.upvotes }}</span>
+                <span class="meta-item" title="Comments">💬 {{ p.num_comments }}</span>
+                {% if p.github_repo %}
+                <a href="{{ p.github_repo }}" target="_blank" class="meta-item" title="GitHub">
+                    ⭐ {{ p.github_stars or 0 }}
+                </a>
+                {% endif %}
+                <a href="https://arxiv.org/abs/{{ p.arxiv_id }}" target="_blank" class="meta-link">arXiv</a>
+                {% if p.project_page %}
+                <a href="{{ p.project_page }}" target="_blank" class="meta-link">Project</a>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    syncPapers('{{ current_date }}');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}HF Daily Papers - 设置{% endblock %}
+{% block content %}
+<div class="setup-container">
+    <h1>API 设置</h1>
+    <p>配置 OpenAI 兼容的 LLM API 信息，用于生成论文摘要。</p>
+    <form id="setup-form">
+        <div class="form-group">
+            <label for="base_url">API Base URL</label>
+            <input type="text" id="base_url" name="llm_base_url" value="https://api.openai.com/v1" required>
+        </div>
+        <div class="form-group">
+            <label for="api_key">API Key</label>
+            <input type="password" id="api_key" name="llm_api_key" placeholder="sk-..." required>
+        </div>
+        <div class="form-group">
+            <label for="model">模型名称</label>
+            <input type="text" id="model" name="llm_model" value="gpt-4o-mini" required>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <p id="setup-msg" class="msg"></p>
+    </form>
+</div>
+
+<script>
+// 加载当前配置
+fetch("/api/config")
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+        if (data) {
+            document.getElementById("base_url").value = data.llm_base_url || "";
+            document.getElementById("model").value = data.llm_model || "";
+            if (data.has_key) {
+                document.getElementById("api_key").placeholder = "已配置（留空则不修改）";
+                document.getElementById("api_key").removeAttribute("required");
+            }
+        }
+    })
+    .catch(function() {});
+</script>
+{% endblock %}
