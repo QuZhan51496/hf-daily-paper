@@ -423,5 +423,23 @@ a.meta-item:hover { color: var(--primary); }
 @media (max-width: 640px) {
     main { padding: 1rem; }
     header { padding: 0.75rem 1rem; }
+    header nav {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    .subtitle { display: none; }
+    .logo { order: 1; }
+    .header-settings {
+        position: static;
+        order: 2;
+    }
+    .header-date-nav {
+        position: static;
+        transform: none;
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.4rem;
+        order: 3;
+    }
     .detail-title { font-size: 1.25rem; }
 }
