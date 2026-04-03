@@ -112,6 +112,39 @@ async function syncPapers(date) {
     }
 }
 
+function pollBriefs(date, immediate) {
+    // 没有 pending 元素就不轮询
+    if (!document.querySelector(".summary-pending")) return;
+
+    var delay = immediate ? 0 : 1000;
+    setTimeout(async function() {
+        try {
+            var resp = await fetch("/api/papers?date=" + date);
+            if (!resp.ok) return;
+            var papers = await resp.json();
+            var stillPending = false;
+            papers.forEach(function(p) {
+                var el = document.getElementById("brief-" + p.id);
+                if (!el) return;
+                var summaryEl = el.querySelector("p");
+                if (!summaryEl) return;
+                if (p.brief_summary_status === "completed" && p.brief_summary) {
+                    summaryEl.textContent = p.brief_summary;
+                    summaryEl.className = "";
+                } else if (p.brief_summary_status === "failed") {
+                    summaryEl.textContent = "概要生成失败";
+                    summaryEl.className = "summary-failed";
+                } else {
+                    stillPending = true;
+                }
+            });
+            if (stillPending) {
+                pollBriefs(date, false);
+            }
+        } catch (e) {}
+    }, delay);
+}
+
 async function resummarize(paperId) {
     try {
         const resp = await fetch(`/api/resummarize/${paperId}`, { method: "POST" });

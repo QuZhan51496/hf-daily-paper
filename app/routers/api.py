@@ -46,10 +46,11 @@ async def api_fetch(date: str | None = None):
         count = 0
         if papers:
             count = await insert_papers(date, papers)
-            all_papers = await get_papers_by_date(date)
-            need_brief = [p for p in all_papers if p.get("brief_summary_status") != "completed"]
-            if need_brief:
-                asyncio.ensure_future(generate_briefs_batch(need_brief))
+            if count > 0:
+                all_papers = await get_papers_by_date(date)
+                need_brief = [p for p in all_papers if p.get("brief_summary_status") != "completed"]
+                if need_brief:
+                    asyncio.ensure_future(generate_briefs_batch(need_brief))
         return {"date": date, "fetched": len(papers), "inserted": count, "status": "ok"}
     except Exception as e:
         logger.error(f"Fetch failed for {date}: {e}")

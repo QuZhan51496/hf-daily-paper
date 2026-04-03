@@ -318,6 +318,12 @@ a.meta-item:hover { color: var(--primary); }
     border-bottom: 2px solid var(--accent);
 }
 
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .summary-box {
     background: var(--accent);
     border-left: 4px solid var(--primary);

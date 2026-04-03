@@ -21,7 +21,7 @@ async def index(request: Request, date: str | None = None):
     prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
     next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
 
-    return templates.TemplateResponse(request, "index.html", context={
+    resp = templates.TemplateResponse(request, "index.html", context={
         "papers": papers,
         "current_date": today,
         "dates": dates,
@@ -29,6 +29,8 @@ async def index(request: Request, date: str | None = None):
         "next_date": next_date,
         "paper_count": len(papers),
     })
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @router.get("/paper/{arxiv_id}")

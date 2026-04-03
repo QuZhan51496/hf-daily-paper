@@ -50,7 +50,6 @@
                 {% else %}
                     <p class="summary-failed">概要生成失败</p>
                 {% endif %}
-                <button class="btn btn-sm btn-regen" onclick="regenerateBrief({{ p.id }}, this)" title="重新生成概要">🔄 重新生成</button>
             </div>
             <div class="paper-meta">
                 <span class="meta-item" title="Upvotes">👍 {{ p.upvotes }}</span>
@@ -64,6 +63,7 @@
                 {% if p.project_page %}
                 <a href="{{ p.project_page }}" target="_blank" class="meta-link">Project</a>
                 {% endif %}
+                <button class="btn btn-sm btn-regen" onclick="regenerateBrief({{ p.id }}, this)" title="重新生成概要">🔄 重新生成</button>
             </div>
         </div>
     </article>
@@ -74,6 +74,13 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     syncPapers('{{ current_date }}');
+    pollBriefs('{{ current_date }}', true);
+});
+// 浏览器回退时强制重新加载，避免显示缓存的旧状态
+window.addEventListener("pageshow", function(e) {
+    if (e.persisted) {
+        window.location.reload();
+    }
 });
 </script>
 {% endblock %}

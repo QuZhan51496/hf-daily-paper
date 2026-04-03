@@ -47,7 +47,7 @@
     {% endif %}
 
     <section class="detail-section">
-        <h2>LLM 深度分析</h2>
+        <h2 class="detail-section-header">LLM 深度分析 <button class="btn btn-sm btn-regen" id="btn-regenerate" onclick="regenerateDetail({{ paper.id }})">🔄 重新生成</button></h2>
         <div id="detail-analysis" class="markdown-body">
             {% if paper.llm_summary_status == 'completed' and paper.llm_summary %}
                 <div class="summary-box" id="llm-raw" style="display:none">{{ paper.llm_summary }}</div>
@@ -56,7 +56,6 @@
                 <p class="summary-pending" id="analysis-loading">正在生成深度分析，请稍候...</p>
             {% endif %}
         </div>
-        <button class="btn btn-sm" id="btn-regenerate" style="margin-top: 0.5rem;" onclick="regenerateDetail({{ paper.id }})">🔄 重新生成</button>
     </section>
 
     <section class="detail-section">
