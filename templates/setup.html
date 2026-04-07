@@ -33,8 +33,8 @@
             <input type="text" id="profile-name" placeholder="如：3D Vision" required>
         </div>
         <div class="form-group">
-            <label for="profile-keywords">关键词（逗号分隔，用于过滤论文标题和摘要）</label>
-            <input type="text" id="profile-keywords" placeholder="如：NeRF, 3D Gaussian, point cloud, depth estimation" required>
+            <label for="profile-keywords">关键词（逗号分隔，用于过滤论文标题和摘要，留空则不过滤）</label>
+            <input type="text" id="profile-keywords" placeholder="如：NeRF, 3D Gaussian, point cloud, depth estimation">
         </div>
         <div class="form-group">
             <label for="profile-categories">ArXiv 分类（逗号分隔，用于指定抓取范围，默认 cs.AI）</label>
@@ -93,7 +93,7 @@ document.getElementById("profile-form").addEventListener("submit", async functio
     const categories = document.getElementById("profile-categories").value.trim();
     const msg = document.getElementById("profile-msg");
 
-    if (!name || !keywords) return;
+    if (!name) return;
 
     try {
         let resp;
