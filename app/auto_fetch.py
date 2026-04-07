@@ -89,7 +89,7 @@ async def _auto_fetch_loop():
                 await generate_arxiv_briefs_batch(need_arxiv_brief)
 
             # 3. 预生成详细分析（仅 auto_analyze 开启的 profile 匹配到的论文）
-            analyze_profiles = [p for p in profiles if p.get("auto_analyze")]
+            analyze_profiles = [p for p in profiles if int(p.get("auto_analyze") or 0)]
             if analyze_profiles:
                 # 收集所有需要分析的论文 id（去重）
                 hf_need = await get_hf_papers_need_detail(today)

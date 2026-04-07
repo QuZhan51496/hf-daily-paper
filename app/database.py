@@ -86,16 +86,14 @@ async def init_db():
         """)
 
         # migrations
-        for table, col, default in [
-            ("papers", "brief_summary", None),
-            ("papers", "brief_summary_status", "'pending'"),
-            ("keyword_profiles", "categories", "''"),
-            ("keyword_profiles", "auto_analyze", "0"),
-        ]:
+        migrations = [
+            ("ALTER TABLE papers ADD COLUMN brief_summary TEXT", None),
+            ("ALTER TABLE papers ADD COLUMN brief_summary_status TEXT DEFAULT 'pending'", None),
+            ("ALTER TABLE keyword_profiles ADD COLUMN categories TEXT DEFAULT ''", None),
+            ("ALTER TABLE keyword_profiles ADD COLUMN auto_analyze INTEGER DEFAULT 0", None),
+        ]
+        for ddl, _ in migrations:
             try:
-                ddl = f"ALTER TABLE {table} ADD COLUMN {col} TEXT"
-                if default:
-                    ddl += f" DEFAULT {default}"
                 await db.execute(ddl)
                 await db.commit()
             except Exception:

@@ -44,8 +44,9 @@
             <label for="profile-categories">ArXiv 分类（逗号分隔，用于指定抓取范围，默认 cs.AI）</label>
             <input type="text" id="profile-categories" placeholder="如：cs.CV, cs.AI, cs.LG">
         </div>
-        <div class="form-group">
-            <label><input type="checkbox" id="profile-auto-analyze"> 自动分析（定时抓取时自动生成匹配论文的详细分析）</label>
+        <div class="form-group" style="display:flex;align-items:center;justify-content:space-between">
+            <label for="profile-auto-analyze" style="white-space:nowrap">自动分析（定时抓取时自动生成匹配论文的详细分析）</label>
+            <input type="checkbox" id="profile-auto-analyze" style="margin:0">
         </div>
         <button type="submit" class="btn btn-primary" id="profile-submit-btn">创建</button>
         <button type="button" class="btn" id="profile-cancel-btn" style="display:none" onclick="cancelEdit()">取消</button>
@@ -61,7 +62,7 @@
                 {% if p.categories %}
                 <span class="profile-keywords">分类: {{ p.categories }}</span>
                 {% endif %}
-                {% if p.auto_analyze %}
+                {% if p.auto_analyze|int %}
                 <span class="profile-keywords" style="color:var(--success)">自动分析: 开启</span>
                 {% endif %}
             </div>

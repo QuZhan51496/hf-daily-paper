@@ -63,12 +63,6 @@ header nav {
     padding: 0.25rem 0.5rem;
 }
 
-.nav-active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-.nav-active:hover { background: var(--primary-hover); color: white; }
 
 .nav-right {
     position: absolute;
@@ -138,6 +132,13 @@ footer a { color: var(--primary); text-decoration: none; }
 }
 
 .btn-primary:hover { background: var(--primary-hover); color: white; }
+
+.nav-active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.nav-active:hover { background: var(--primary-hover); color: white; }
 
 /* Header date navigation */
 .header-date-nav {
