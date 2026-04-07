@@ -11,20 +11,19 @@
     <header>
         <nav>
             <div class="nav-left">
-                <a href="/" class="logo">📄 Paper Hub</a>
-                <a href="/" class="btn btn-sm nav-link">HF Papers</a>
-                <a href="/arxiv" class="btn btn-sm nav-link">ArXiv Papers</a>
-                <a href="/profiles" class="btn btn-sm nav-link">Profiles</a>
+                <a href="/" class="logo">📄<span class="logo-text"> Paper Hub</span></a>
+                <a href="/" class="btn btn-sm nav-link" data-nav="hf">HF Papers</a>
+                <a href="/arxiv" class="btn btn-sm nav-link" data-nav="arxiv">ArXiv Papers</a>
             </div>
             {% block header_right %}{% endblock %}
-            <a href="/setup" class="btn btn-sm header-settings" title="设置">⚙ 设置</a>
+            <a href="/setup" class="btn btn-sm nav-right" title="设置">⚙ 设置</a>
         </nav>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p>Powered by <a href="https://huggingface.co/papers" target="_blank">Hugging Face</a> + LLM</p>
+        <p>Powered by <a href="https://huggingface.co/papers" target="_blank">Hugging Face</a> + <a href="https://arxiv.org" target="_blank">arXiv</a> + LLM</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>

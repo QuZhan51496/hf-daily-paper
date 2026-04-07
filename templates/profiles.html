@@ -11,8 +11,12 @@
             <input type="text" id="profile-name" placeholder="如：3D Vision" required>
         </div>
         <div class="form-group">
-            <label for="profile-keywords">关键词（逗号分隔）</label>
+            <label for="profile-keywords">关键词（逗号分隔，用于过滤论文标题和摘要）</label>
             <input type="text" id="profile-keywords" placeholder="如：NeRF, 3D Gaussian, point cloud, depth estimation" required>
+        </div>
+        <div class="form-group">
+            <label for="profile-categories">ArXiv 分类（逗号分隔，用于指定抓取范围，默认 cs.AI）</label>
+            <input type="text" id="profile-categories" placeholder="如：cs.CV, cs.AI, cs.LG">
         </div>
         <button type="submit" class="btn btn-primary" id="profile-submit-btn">创建</button>
         <button type="button" class="btn" id="profile-cancel-btn" style="display:none" onclick="cancelEdit()">取消</button>
@@ -26,10 +30,13 @@
         <div class="profile-item" id="profile-{{ p.id }}">
             <div class="profile-info">
                 <strong>{{ p.name }}</strong>
-                <span class="profile-keywords">{{ p.keywords }}</span>
+                <span class="profile-keywords">关键词: {{ p.keywords }}</span>
+                {% if p.categories %}
+                <span class="profile-keywords">分类: {{ p.categories }}</span>
+                {% endif %}
             </div>
             <div class="profile-actions">
-                <button class="btn btn-sm" onclick="editProfile({{ p.id }}, '{{ p.name }}', '{{ p.keywords }}')">编辑</button>
+                <button class="btn btn-sm" onclick="editProfile({{ p.id }}, '{{ p.name }}', '{{ p.keywords }}', '{{ p.categories or "" }}')">编辑</button>
                 <button class="btn btn-sm" style="color:var(--danger)" onclick="deleteProfile({{ p.id }})">删除</button>
             </div>
         </div>
@@ -47,6 +54,7 @@ document.getElementById("profile-form").addEventListener("submit", async functio
     e.preventDefault();
     const name = document.getElementById("profile-name").value.trim();
     const keywords = document.getElementById("profile-keywords").value.trim();
+    const categories = document.getElementById("profile-categories").value.trim();
     const msg = document.getElementById("profile-msg");
 
     if (!name || !keywords) return;
@@ -57,13 +65,13 @@ document.getElementById("profile-form").addEventListener("submit", async functio
             resp = await fetch(`/api/profiles/${editingId}`, {
                 method: "PUT",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({name, keywords})
+                body: JSON.stringify({name, keywords, categories})
             });
         } else {
             resp = await fetch("/api/profiles", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({name, keywords})
+                body: JSON.stringify({name, keywords, categories})
             });
         }
         if (resp.ok) {
@@ -81,10 +89,11 @@ document.getElementById("profile-form").addEventListener("submit", async functio
     }
 });
 
-function editProfile(id, name, keywords) {
+function editProfile(id, name, keywords, categories) {
     editingId = id;
     document.getElementById("profile-name").value = name;
     document.getElementById("profile-keywords").value = keywords;
+    document.getElementById("profile-categories").value = categories || "";
     document.getElementById("profile-submit-btn").textContent = "保存";
     document.getElementById("profile-cancel-btn").style.display = "inline-block";
 }
@@ -93,6 +102,7 @@ function cancelEdit() {
     editingId = null;
     document.getElementById("profile-name").value = "";
     document.getElementById("profile-keywords").value = "";
+    document.getElementById("profile-categories").value = "";
     document.getElementById("profile-submit-btn").textContent = "创建";
     document.getElementById("profile-cancel-btn").style.display = "none";
 }

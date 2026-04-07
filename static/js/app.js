@@ -1,4 +1,49 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // profile 缓存：保存当前选中的 profile_id，导航时自动携带
+    var profileSelect = document.getElementById("profile-select");
+    if (profileSelect && profileSelect.value) {
+        localStorage.setItem("profile_id", profileSelect.value);
+    }
+    // 如果 URL 没有 profile_id 但 localStorage 有，自动跳转
+    var params = new URLSearchParams(window.location.search);
+    var savedPid = localStorage.getItem("profile_id");
+    if (profileSelect && !params.has("profile_id") && savedPid) {
+        // 检查 savedPid 是否在下拉选项中
+        var found = Array.from(profileSelect.options).some(function(o) { return o.value === savedPid; });
+        if (found) {
+            params.set("profile_id", savedPid);
+            window.location.href = window.location.pathname + "?" + params.toString();
+            return;
+        } else {
+            localStorage.removeItem("profile_id");
+        }
+    }
+    // profile 切换时更新 localStorage
+    if (profileSelect) {
+        profileSelect.addEventListener("change", function() {
+            if (this.value) {
+                localStorage.setItem("profile_id", this.value);
+            } else {
+                localStorage.removeItem("profile_id");
+            }
+        });
+    }
+
+    // 导航链接携带 profile_id 和当前日期
+    document.querySelectorAll("a[data-nav]").forEach(function(link) {
+        link.addEventListener("click", function(e) {
+            e.preventDefault();
+            var pid = localStorage.getItem("profile_id");
+            var datePicker = document.getElementById("date-picker");
+            var url = this.getAttribute("href");
+            var params = [];
+            if (datePicker && datePicker.value) params.push("date=" + datePicker.value);
+            if (pid) params.push("profile_id=" + pid);
+            if (params.length) url += "?" + params.join("&");
+            window.location.href = url;
+        });
+    });
+
     const setupForm = document.getElementById("setup-form");
     if (setupForm) {
         setupForm.addEventListener("submit", async (e) => {
@@ -184,10 +229,10 @@ async function regenerateBrief(paperId, btn) {
 
 // ── ArXiv functions ──────────────────────────────────────────
 
-async function syncArxivPapers(date, category) {
+async function syncArxivPapers(date, categories) {
     const msg = document.getElementById("fetch-msg");
     try {
-        const resp = await fetch(`/api/arxiv/fetch?date=${date}&category=${encodeURIComponent(category)}`, { method: "POST" });
+        const resp = await fetch(`/api/arxiv/fetch?date=${date}&categories=${encodeURIComponent(categories)}`, { method: "POST" });
         if (resp.ok) {
             const data = await resp.json();
             if (data.inserted > 0) {
@@ -214,12 +259,12 @@ async function syncArxivPapers(date, category) {
     }
 }
 
-function pollArxivBriefs(date, category, profileId) {
+function pollArxivBriefs(date, profileId) {
     if (!document.querySelector(".summary-pending")) return;
 
     setTimeout(async function() {
         try {
-            var url = "/api/arxiv/papers?date=" + date + "&category=" + encodeURIComponent(category);
+            var url = "/api/arxiv/papers?date=" + date;
             if (profileId) url += "&profile_id=" + profileId;
             var resp = await fetch(url);
             if (!resp.ok) return;
@@ -241,7 +286,7 @@ function pollArxivBriefs(date, category, profileId) {
                 }
             });
             if (stillPending) {
-                pollArxivBriefs(date, category, profileId);
+                pollArxivBriefs(date, profileId);
             }
         } catch (e) {}
     }, 1000);

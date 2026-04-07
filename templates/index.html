@@ -6,18 +6,27 @@
     <input type="date" id="date-picker" value="{{ current_date }}">
     <a href="/?date={{ next_date }}{% if current_profile_id %}&profile_id={{ current_profile_id }}{% endif %}" class="btn btn-sm">&rarr;</a>
     <select id="profile-select" class="filter-select">
-        <option value="">全部 ({{ paper_count }} 篇)</option>
+        <option value="">选择 Profile</option>
         {% for prof in profiles %}
-        <option value="{{ prof.id }}" {% if current_profile_id == prof.id %}selected{% endif %}>{{ prof.name }}</option>
+        <option value="{{ prof.id }}" {% if current_profile_id == prof.id %}selected{% endif %}>{{ prof.name }} ({{ paper_count }} 篇)</option>
         {% endfor %}
     </select>
 </div>
 {% endblock %}
 {% block content %}
 
-{% if paper_count == 0 %}
+{% if not current_profile_id %}
+<div class="empty-state">
+    <p>请选择一个 Profile 查看论文，或前往 <a href="/profiles">Profiles</a> 创建</p>
+    <p id="fetch-msg" class="msg"></p>
+</div>
+{% elif paper_count == 0 and total_count == 0 %}
 <div class="empty-state">
     <p id="fetch-msg" class="msg">正在自动抓取该日论文...</p>
+</div>
+{% elif paper_count == 0 and total_count > 0 %}
+<div class="empty-state">
+    <p>当前 Profile 下无匹配论文（共 {{ total_count }} 篇）</p>
 </div>
 {% else %}
 <div class="paper-grid">
@@ -78,8 +87,10 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    {% if current_profile_id %}
     syncPapers('{{ current_date }}');
     pollBriefs('{{ current_date }}', true);
+    {% endif %}
 
     var profileSelect = document.getElementById("profile-select");
     if (profileSelect) {

@@ -78,21 +78,26 @@ async def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
                 keywords TEXT NOT NULL,
+                categories TEXT DEFAULT '',
                 created_at TEXT,
                 updated_at TEXT
             );
         """)
 
-        # migrate: add brief_summary columns to existing databases
-        for col, default in [("brief_summary", None), ("brief_summary_status", "'pending'")]:
+        # migrations
+        for table, col, default in [
+            ("papers", "brief_summary", None),
+            ("papers", "brief_summary_status", "'pending'"),
+            ("keyword_profiles", "categories", "''"),
+        ]:
             try:
-                ddl = f"ALTER TABLE papers ADD COLUMN {col} TEXT"
+                ddl = f"ALTER TABLE {table} ADD COLUMN {col} TEXT"
                 if default:
                     ddl += f" DEFAULT {default}"
                 await db.execute(ddl)
                 await db.commit()
             except Exception:
-                pass  # column already exists
+                pass
 
 
 async def get_db():
@@ -342,23 +347,23 @@ async def get_keyword_profile(profile_id: int) -> dict | None:
         return dict(row) if row else None
 
 
-async def create_keyword_profile(name: str, keywords: str) -> int:
+async def create_keyword_profile(name: str, keywords: str, categories: str = "") -> int:
     now = datetime.now(timezone.utc).isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "INSERT INTO keyword_profiles (name, keywords, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            (name, keywords, now, now),
+            "INSERT INTO keyword_profiles (name, keywords, categories, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (name, keywords, categories, now, now),
         )
         await db.commit()
         return cursor.lastrowid
 
 
-async def update_keyword_profile(profile_id: int, name: str, keywords: str):
+async def update_keyword_profile(profile_id: int, name: str, keywords: str, categories: str = ""):
     now = datetime.now(timezone.utc).isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "UPDATE keyword_profiles SET name = ?, keywords = ?, updated_at = ? WHERE id = ?",
-            (name, keywords, now, profile_id),
+            "UPDATE keyword_profiles SET name = ?, keywords = ?, categories = ?, updated_at = ? WHERE id = ?",
+            (name, keywords, categories, now, profile_id),
         )
         await db.commit()
 

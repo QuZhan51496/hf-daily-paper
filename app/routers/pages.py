@@ -22,6 +22,7 @@ async def index(request: Request, date: str | None = None, profile_id: int | Non
     today = date or _today()
     papers = await get_papers_by_date(today)
     profiles = await get_keyword_profiles()
+    total_count = len(papers)
 
     if profile_id:
         profile = await get_keyword_profile(profile_id)
@@ -37,6 +38,7 @@ async def index(request: Request, date: str | None = None, profile_id: int | Non
         "prev_date": prev_date,
         "next_date": next_date,
         "paper_count": len(papers),
+        "total_count": total_count,
         "profiles": profiles,
         "current_profile_id": profile_id,
     })
@@ -55,19 +57,26 @@ async def paper_detail(request: Request, arxiv_id: str, date: str | None = None)
 # ── ArXiv pages ───────────────────────────────────────────────
 
 @router.get("/arxiv")
-async def arxiv_index(request: Request, date: str | None = None, category: str = "cs.CV", profile_id: int | None = None):
+async def arxiv_index(request: Request, date: str | None = None, profile_id: int | None = None):
     if not CONFIG_PATH.exists():
         return templates.TemplateResponse(request, "setup.html")
 
     today = date or _today()
-    papers = await get_arxiv_papers_by_date(today, category)
     profiles = await get_keyword_profiles()
 
-    total_count = len(papers)
+    # 获取当前 profile 的 categories
+    current_profile = None
+    categories_str = ""
     if profile_id:
-        profile = await get_keyword_profile(profile_id)
-        if profile:
-            papers = filter_papers_by_keywords(papers, profile["keywords"])
+        current_profile = await get_keyword_profile(profile_id)
+        if current_profile:
+            categories_str = current_profile.get("categories", "")
+
+    papers = await get_arxiv_papers_by_date(today)
+    total_count = len(papers)
+
+    if current_profile:
+        papers = filter_papers_by_keywords(papers, current_profile["keywords"])
 
     prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
     next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
@@ -79,7 +88,7 @@ async def arxiv_index(request: Request, date: str | None = None, category: str =
         "next_date": next_date,
         "paper_count": len(papers),
         "total_count": total_count,
-        "current_category": category,
+        "categories_str": categories_str,
         "profiles": profiles,
         "current_profile_id": profile_id,
     })
@@ -97,15 +106,10 @@ async def arxiv_paper_detail(request: Request, arxiv_id: str, date: str | None =
 
 # ── Profiles page ─────────────────────────────────────────────
 
-@router.get("/profiles")
-async def profiles_page(request: Request):
-    profiles = await get_keyword_profiles()
-    return templates.TemplateResponse(request, "profiles.html", context={"profiles": profiles})
-
-
 @router.get("/setup")
 async def setup_page(request: Request):
-    return templates.TemplateResponse(request, "setup.html")
+    profiles = await get_keyword_profiles()
+    return templates.TemplateResponse(request, "setup.html", context={"profiles": profiles})
 
 
 def _today() -> str:

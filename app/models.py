@@ -55,6 +55,7 @@ class ArxivPaperResponse(BaseModel):
 class KeywordProfileCreate(BaseModel):
     name: str
     keywords: str
+    categories: str = ""
 
 
 class SetupRequest(BaseModel):

@@ -11,14 +11,14 @@ ATOM_NS = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 
-async def fetch_arxiv_papers(date: str, category: str = "cs.CV", max_papers: int = 500) -> list[dict]:
+async def fetch_arxiv_papers(date: str, category: str = "cs.AI", max_papers: int = 500) -> list[dict]:
     """Fetch arxiv papers for a specific date and category."""
     logger.info(f"Fetching arxiv papers for {category} on {date}")
     all_papers = []
     start = 0
     batch_size = 100
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         while start < max_papers:
             params = {
                 "search_query": f"cat:{category}",

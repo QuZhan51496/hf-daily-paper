@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}HF Daily Papers - 设置{% endblock %}
+{% block title %}设置{% endblock %}
 {% block content %}
-<div class="setup-container">
+<div class="setup-container" style="max-width:640px">
+
     <h1>API 设置</h1>
     <p>配置 OpenAI 兼容的 LLM API 信息，用于生成论文摘要。</p>
     <form id="setup-form">
@@ -20,10 +21,54 @@
         <button type="submit" class="btn btn-primary">保存</button>
         <p id="setup-msg" class="msg"></p>
     </form>
+
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);">
+
+    <h1>关键词 Profiles</h1>
+    <p>创建关键词 Profile，用于在 HF Papers 和 ArXiv Papers 页面过滤论文。</p>
+
+    <form id="profile-form">
+        <div class="form-group">
+            <label for="profile-name">Profile 名称</label>
+            <input type="text" id="profile-name" placeholder="如：3D Vision" required>
+        </div>
+        <div class="form-group">
+            <label for="profile-keywords">关键词（逗号分隔，用于过滤论文标题和摘要）</label>
+            <input type="text" id="profile-keywords" placeholder="如：NeRF, 3D Gaussian, point cloud, depth estimation" required>
+        </div>
+        <div class="form-group">
+            <label for="profile-categories">ArXiv 分类（逗号分隔，用于指定抓取范围，默认 cs.AI）</label>
+            <input type="text" id="profile-categories" placeholder="如：cs.CV, cs.AI, cs.LG">
+        </div>
+        <button type="submit" class="btn btn-primary" id="profile-submit-btn">创建</button>
+        <button type="button" class="btn" id="profile-cancel-btn" style="display:none" onclick="cancelEdit()">取消</button>
+        <p id="profile-msg" class="msg"></p>
+    </form>
+
+    <div id="profile-list" style="margin-top:1rem">
+        {% for p in profiles %}
+        <div class="profile-item" id="profile-{{ p.id }}">
+            <div class="profile-info">
+                <strong>{{ p.name }}</strong>
+                <span class="profile-keywords">关键词: {{ p.keywords }}</span>
+                {% if p.categories %}
+                <span class="profile-keywords">分类: {{ p.categories }}</span>
+                {% endif %}
+            </div>
+            <div class="profile-actions">
+                <button class="btn btn-sm" onclick="editProfile({{ p.id }}, '{{ p.name }}', '{{ p.keywords }}', '{{ p.categories or "" }}')">编辑</button>
+                <button class="btn btn-sm" style="color:var(--danger)" onclick="deleteProfile({{ p.id }})">删除</button>
+            </div>
+        </div>
+        {% endfor %}
+        {% if not profiles %}
+        <p class="msg">暂无 Profile，请创建。</p>
+        {% endif %}
+    </div>
 </div>
 
 <script>
-// 加载当前配置
+// 加载 API 配置
 fetch("/api/config")
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
@@ -37,5 +82,72 @@ fetch("/api/config")
         }
     })
     .catch(function() {});
+
+// Profile 管理
+let editingId = null;
+
+document.getElementById("profile-form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const name = document.getElementById("profile-name").value.trim();
+    const keywords = document.getElementById("profile-keywords").value.trim();
+    const categories = document.getElementById("profile-categories").value.trim();
+    const msg = document.getElementById("profile-msg");
+
+    if (!name || !keywords) return;
+
+    try {
+        let resp;
+        if (editingId) {
+            resp = await fetch(`/api/profiles/${editingId}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({name, keywords, categories})
+            });
+        } else {
+            resp = await fetch("/api/profiles", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({name, keywords, categories})
+            });
+        }
+        if (resp.ok) {
+            msg.textContent = editingId ? "已更新" : "已创建";
+            msg.className = "msg success";
+            setTimeout(() => window.location.reload(), 500);
+        } else {
+            const err = await resp.json();
+            msg.textContent = "失败: " + (err.detail || "未知错误");
+            msg.className = "msg error";
+        }
+    } catch (err) {
+        msg.textContent = "网络错误";
+        msg.className = "msg error";
+    }
+});
+
+function editProfile(id, name, keywords, categories) {
+    editingId = id;
+    document.getElementById("profile-name").value = name;
+    document.getElementById("profile-keywords").value = keywords;
+    document.getElementById("profile-categories").value = categories || "";
+    document.getElementById("profile-submit-btn").textContent = "保存";
+    document.getElementById("profile-cancel-btn").style.display = "inline-block";
+    document.getElementById("profile-form").scrollIntoView({behavior: "smooth"});
+}
+
+function cancelEdit() {
+    editingId = null;
+    document.getElementById("profile-name").value = "";
+    document.getElementById("profile-keywords").value = "";
+    document.getElementById("profile-categories").value = "";
+    document.getElementById("profile-submit-btn").textContent = "创建";
+    document.getElementById("profile-cancel-btn").style.display = "none";
+}
+
+async function deleteProfile(id) {
+    if (!confirm("确定删除？")) return;
+    await fetch(`/api/profiles/${id}`, {method: "DELETE"});
+    window.location.reload();
+}
 </script>
 {% endblock %}
