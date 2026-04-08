@@ -8,7 +8,7 @@
     <select id="profile-select" class="filter-select">
         <option value="">选择 Profile</option>
         {% for prof in profiles %}
-        <option value="{{ prof.id }}" {% if current_profile_id == prof.id %}selected{% endif %}>{{ prof.name }} ({{ paper_count }}/{{ total_count }})</option>
+        <option value="{{ prof.id }}" {% if current_profile_id == prof.id %}selected{% endif %}>{{ prof.name }} ({{ prof.match_count }}/{{ total_count }})</option>
         {% endfor %}
     </select>
 </div>

@@ -20,14 +20,23 @@ async def index(request: Request, date: str | None = None, profile_id: int | Non
         return templates.TemplateResponse(request, "setup.html")
 
     today = date or _today()
-    papers = await get_papers_by_date(today)
+    all_papers = await get_papers_by_date(today)
     profiles = await get_keyword_profiles()
-    total_count = len(papers)
+    total_count = len(all_papers)
 
+    # 预计算每个 profile 的匹配数
+    for prof in profiles:
+        kw = prof.get("keywords", "")
+        if kw:
+            prof["match_count"] = len(filter_papers_by_keywords(all_papers, kw))
+        else:
+            prof["match_count"] = total_count
+
+    papers = all_papers
     if profile_id:
         profile = await get_keyword_profile(profile_id)
         if profile:
-            papers = filter_papers_by_keywords(papers, profile["keywords"])
+            papers = filter_papers_by_keywords(all_papers, profile["keywords"])
 
     prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
     next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
@@ -73,11 +82,19 @@ async def arxiv_index(request: Request, date: str | None = None, profile_id: int
         if current_profile:
             categories_str = current_profile.get("categories", "")
 
-    papers = await get_arxiv_papers_by_date(today)
-    total_count = len(papers)
+    all_papers = await get_arxiv_papers_by_date(today)
+    total_count = len(all_papers)
 
+    for prof in profiles:
+        kw = prof.get("keywords", "")
+        if kw:
+            prof["match_count"] = len(filter_papers_by_keywords(all_papers, kw))
+        else:
+            prof["match_count"] = total_count
+
+    papers = all_papers
     if current_profile:
-        papers = filter_papers_by_keywords(papers, current_profile["keywords"])
+        papers = filter_papers_by_keywords(all_papers, current_profile["keywords"])
 
     prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
     next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
