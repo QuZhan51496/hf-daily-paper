@@ -73,16 +73,29 @@
 
 <script>
 function renderMarkdown(text) {
-    let html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g, '<br>');
+    // 先保护 LaTeX 公式，避免被 marked 转义
+    var mathBlocks = [];
+    var placeholder = function(i) { return '%%MATH' + i + '%%'; };
+    // 块级公式
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: true });
+        return placeholder(i);
+    });
+    // 行内公式
+    text = text.replace(/\$([^\$\n]+?)\$/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: false });
+        return placeholder(i);
+    });
+    // 渲染 markdown
+    var html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g, '<br>');
+    // 还原并渲染 LaTeX
     if (typeof katex !== 'undefined') {
-        html = html.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-            try { return katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }); }
-            catch { return _; }
-        });
-        html = html.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
-            try { return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }); }
-            catch { return _; }
-        });
+        for (var i = 0; i < mathBlocks.length; i++) {
+            var rendered = katex.renderToString(mathBlocks[i].tex, { displayMode: mathBlocks[i].display, throwOnError: false });
+            html = html.replace(placeholder(i), rendered);
+        }
     }
     return html;
 }
