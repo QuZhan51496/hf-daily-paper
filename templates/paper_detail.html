@@ -73,16 +73,12 @@
 
 <script>
 function renderMarkdown(text) {
-    // 先用 marked 渲染 markdown
     let html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g, '<br>');
-    // 再渲染 LaTeX 公式
     if (typeof katex !== 'undefined') {
-        // 块级公式 $$...$$
         html = html.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
             try { return katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }); }
             catch { return _; }
         });
-        // 行内公式 $...$（不匹配 $$）
         html = html.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
             try { return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }); }
             catch { return _; }
@@ -91,12 +87,11 @@ function renderMarkdown(text) {
     return html;
 }
 
-(function() {
+document.addEventListener("DOMContentLoaded", function() {
     const paperId = {{ paper.id }};
     const status = "{{ paper.llm_summary_status }}";
     const analysisDiv = document.getElementById("detail-analysis");
 
-    // 渲染已有的服务端内容
     const rawEl = document.getElementById("llm-raw");
     const renderedEl = document.getElementById("llm-rendered");
     if (rawEl && renderedEl) {
@@ -107,7 +102,6 @@ function renderMarkdown(text) {
         return;
     }
 
-    // 自动触发生成
     fetch(`/api/generate_detail/${paperId}`, { method: "POST" })
         .then(r => r.json())
         .then(data => {
@@ -120,7 +114,7 @@ function renderMarkdown(text) {
         .catch(() => {
             analysisDiv.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
         });
-})();
+});
 
 function regenerateDetail(paperId) {
     const div = document.getElementById("detail-analysis");

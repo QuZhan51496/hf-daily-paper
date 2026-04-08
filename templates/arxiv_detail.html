@@ -67,7 +67,7 @@ function renderMarkdown(text) {
     return html;
 }
 
-(function() {
+document.addEventListener("DOMContentLoaded", function() {
     const paperId = {{ paper.id }};
     const status = "{{ paper.llm_summary_status }}";
     const analysisDiv = document.getElementById("detail-analysis");
@@ -92,7 +92,7 @@ function renderMarkdown(text) {
         .catch(() => {
             analysisDiv.innerHTML = `<p class="summary-failed">分析生成失败</p>`;
         });
-})();
+});
 
 function regenerateDetail(paperId) {
     const div = document.getElementById("detail-analysis");
