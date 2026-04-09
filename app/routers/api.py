@@ -10,6 +10,7 @@ from app.database import (
     get_arxiv_available_dates, update_arxiv_llm_summary, update_arxiv_brief_summary,
     get_keyword_profiles, get_keyword_profile, create_keyword_profile,
     update_keyword_profile, delete_keyword_profile,
+    get_hf_papers_need_detail, get_arxiv_papers_need_detail,
 )
 from app.fetcher import fetch_daily_papers
 from app.arxiv_fetcher import fetch_arxiv_papers
@@ -20,6 +21,46 @@ from app.config import Settings, save_config, load_config, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
+
+
+async def _auto_analyze_details(date: str, source: str = "hf"):
+    """对开启 auto_analyze 的 profile 匹配到的论文触发详细分析"""
+    profiles = await get_keyword_profiles()
+    analyze_profiles = [p for p in profiles if int(p.get("auto_analyze") or 0)]
+    if not analyze_profiles:
+        return
+
+    if source == "hf":
+        need = await get_hf_papers_need_detail(date)
+    else:
+        need = await get_arxiv_papers_need_detail(date)
+    if not need:
+        return
+
+    analyze_ids = set()
+    for prof in analyze_profiles:
+        kw = prof.get("keywords", "")
+        for p in filter_papers_by_keywords(need, kw):
+            analyze_ids.add(p["id"])
+
+    for paper in need:
+        if paper["id"] not in analyze_ids:
+            continue
+        try:
+            summary = await generate_detail(
+                paper["title"], paper.get("abstract", ""), arxiv_id=paper.get("arxiv_id")
+            )
+            if source == "hf":
+                await update_llm_summary(paper["id"], summary, "completed")
+            else:
+                await update_arxiv_llm_summary(paper["id"], summary, "completed")
+            logger.info(f"Auto-analyze {source} detail done: {paper['title'][:50]}...")
+        except Exception as e:
+            logger.error(f"Auto-analyze {source} detail failed {paper['id']}: {e}")
+            if source == "hf":
+                await update_llm_summary(paper["id"], str(e), "failed")
+            else:
+                await update_arxiv_llm_summary(paper["id"], str(e), "failed")
 
 
 @router.get("/papers")
@@ -57,6 +98,7 @@ async def api_fetch(date: str | None = None):
                 need_brief = [p for p in all_papers if p.get("brief_summary_status") != "completed"]
                 if need_brief:
                     asyncio.ensure_future(generate_briefs_batch(need_brief))
+                asyncio.ensure_future(_auto_analyze_details(date, "hf"))
         return {"date": date, "fetched": len(papers), "inserted": count, "status": "ok"}
     except Exception as e:
         logger.error(f"Fetch failed for {date}: {e}")
@@ -232,6 +274,7 @@ async def api_arxiv_fetch(date: str | None = None, categories: str = "cs.AI"):
             need_brief = [p for p in all_papers if p.get("brief_summary_status") != "completed"]
             if need_brief:
                 asyncio.ensure_future(generate_arxiv_briefs_batch(need_brief))
+            asyncio.ensure_future(_auto_analyze_details(date, "arxiv"))
         return {"date": date, "categories": categories, "fetched": total_fetched, "inserted": total_inserted, "status": "ok"}
     except Exception as e:
         logger.error(f"ArXiv fetch failed for {categories} {date}: {e}")
