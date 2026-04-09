@@ -129,6 +129,14 @@ async def insert_papers(date: str, papers: list[dict]) -> int:
                 )
                 if db.total_changes > changes_before:
                     count += 1
+                else:
+                    # 已存在的论文，更新点赞、评论、GitHub stars
+                    await db.execute(
+                        """UPDATE papers SET upvotes = ?, num_comments = ?, github_stars = ?
+                        WHERE arxiv_id = ? AND date = ?""",
+                        (p.get("upvotes", 0), p.get("num_comments", 0),
+                         p.get("github_stars"), p["arxiv_id"], date),
+                    )
             except Exception:
                 pass
         await db.commit()
