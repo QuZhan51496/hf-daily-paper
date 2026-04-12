@@ -32,6 +32,9 @@
 <div class="paper-grid">
     {% for p in papers %}
     <article class="paper-card">
+        <div class="paper-thumb">
+            <img src="/api/arxiv/thumbnail/{{ p.arxiv_id }}" alt="{{ p.title }}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        </div>
         <div class="paper-body">
             <h2 class="paper-title">
                 <a href="/arxiv/paper/{{ p.arxiv_id }}?date={{ current_date }}">{{ p.title }}</a>

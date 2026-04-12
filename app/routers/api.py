@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import date
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from app.database import (
     get_papers_by_date, get_available_dates, get_paper_detail,
     is_date_fetched, insert_papers, update_llm_summary,
@@ -339,6 +340,17 @@ async def api_arxiv_resummarize(paper_id: int):
     except Exception as e:
         await update_arxiv_llm_summary(paper_id, str(e), "failed")
         raise HTTPException(500, str(e))
+
+
+# ── Thumbnail endpoint ────────────────────────────────────────
+
+@router.get("/arxiv/thumbnail/{arxiv_id:path}")
+async def api_arxiv_thumbnail(arxiv_id: str):
+    from app.thumbnail import get_thumbnail_path
+    path = await get_thumbnail_path(arxiv_id)
+    if not path:
+        raise HTTPException(404, "Thumbnail not available")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 # ── Keyword profile endpoints ────────────────────────────────
