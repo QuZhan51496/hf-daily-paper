@@ -22,19 +22,18 @@ async def index(request: Request, date: str | None = None, profile_id: int | Non
     requested_date = date or _today()
     today = requested_date
     all_papers = await get_papers_by_date(today)
+    available = await get_available_dates()
 
-    # 当天数据库无论文时 fallback 到最近的有论文日期（不超过请求日期）
-    if not all_papers:
-        available = await get_available_dates()
-        if available:
-            # 找请求日期之前（含）最近的有论文日期
-            before = [d for d in available if d <= requested_date]
-            if before:
-                today = before[0]  # available 降序，第一个就是最近的
-            else:
-                # 请求日期之前没有，取最近的（往后）
-                today = available[-1]
-            all_papers = await get_papers_by_date(today)
+    # 当天数据库无论文时 fallback 到最近的有论文日期
+    if not all_papers and available:
+        # 先往前找，再往后找
+        before = [d for d in available if d <= requested_date]
+        after = [d for d in available if d > requested_date]
+        if before:
+            today = before[0]
+        elif after:
+            today = after[-1]
+        all_papers = await get_papers_by_date(today)
 
     profiles = await get_keyword_profiles()
     total_count = len(all_papers)
@@ -52,8 +51,11 @@ async def index(request: Request, date: str | None = None, profile_id: int | Non
         if profile:
             papers = filter_papers_by_keywords(all_papers, profile["keywords"])
 
-    prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
-    next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
+    # prev/next 跳到有论文的日期
+    before = [d for d in available if d < today]
+    after = [d for d in available if d > today]
+    prev_date = before[0] if before else (_parse_date(today) - timedelta(days=1)).isoformat()
+    next_date = after[-1] if after else (_parse_date(today) + timedelta(days=1)).isoformat()
 
     resp = templates.TemplateResponse(request, "index.html", context={
         "papers": papers,
@@ -99,17 +101,17 @@ async def arxiv_index(request: Request, date: str | None = None, profile_id: int
             categories_str = current_profile.get("categories", "")
 
     all_papers = await get_arxiv_papers_by_date(today)
+    available = await get_arxiv_available_dates()
 
-    # 当天数据库无论文时 fallback 到最近的有论文日期（不超过请求日期）
-    if not all_papers:
-        available = await get_arxiv_available_dates()
-        if available:
-            before = [d for d in available if d <= requested_date]
-            if before:
-                today = before[0]
-            else:
-                today = available[-1]
-            all_papers = await get_arxiv_papers_by_date(today)
+    # 当天数据库无论文时 fallback
+    if not all_papers and available:
+        before = [d for d in available if d <= requested_date]
+        after = [d for d in available if d > requested_date]
+        if before:
+            today = before[0]
+        elif after:
+            today = after[-1]
+        all_papers = await get_arxiv_papers_by_date(today)
     total_count = len(all_papers)
 
     for prof in profiles:
@@ -123,8 +125,11 @@ async def arxiv_index(request: Request, date: str | None = None, profile_id: int
     if current_profile:
         papers = filter_papers_by_keywords(all_papers, current_profile["keywords"])
 
-    prev_date = (_parse_date(today) - timedelta(days=1)).isoformat()
-    next_date = (_parse_date(today) + timedelta(days=1)).isoformat()
+    # prev/next 跳到有论文的日期
+    before = [d for d in available if d < today]
+    after = [d for d in available if d > today]
+    prev_date = before[0] if before else (_parse_date(today) - timedelta(days=1)).isoformat()
+    next_date = after[-1] if after else (_parse_date(today) + timedelta(days=1)).isoformat()
 
     resp = templates.TemplateResponse(request, "arxiv_index.html", context={
         "papers": papers,
