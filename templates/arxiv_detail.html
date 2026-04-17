@@ -33,6 +33,10 @@
         <a href="https://arxiv.org/html/{{ paper.arxiv_id }}" target="_blank" class="btn btn-sm">HTML</a>
     </div>
 
+    <div class="detail-thumb">
+        <img src="/api/arxiv/thumbnail/{{ paper.arxiv_id }}" alt="{{ paper.title }}" loading="lazy" onerror="this.parentElement.style.display='none'">
+    </div>
+
     <section class="detail-section">
         <h2 class="detail-section-header">LLM 深度分析 <button class="btn btn-sm btn-regen" id="btn-regenerate" onclick="regenerateDetail({{ paper.id }})">🔄 重新生成</button></h2>
         <div id="detail-analysis" class="markdown-body">
