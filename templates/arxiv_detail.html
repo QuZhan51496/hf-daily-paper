@@ -59,6 +59,16 @@
 function renderMarkdown(text) {
     var mathBlocks = [];
     var placeholder = function(i) { return '%%MATH' + i + '%%'; };
+    text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: true });
+        return placeholder(i);
+    });
+    text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: false });
+        return placeholder(i);
+    });
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, tex) {
         var i = mathBlocks.length;
         mathBlocks.push({ tex: tex.trim(), display: true });

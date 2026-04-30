@@ -76,13 +76,24 @@ function renderMarkdown(text) {
     // 先保护 LaTeX 公式，避免被 marked 转义
     var mathBlocks = [];
     var placeholder = function(i) { return '%%MATH' + i + '%%'; };
-    // 块级公式
+    // 块级公式：\[...\] 和 $$...$$
+    text = text.replace(/\\\[([\s\S]*?)\\\]/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: true });
+        return placeholder(i);
+    });
+    // 行内公式：\(...\)
+    text = text.replace(/\\\(([\s\S]*?)\\\)/g, function(m, tex) {
+        var i = mathBlocks.length;
+        mathBlocks.push({ tex: tex.trim(), display: false });
+        return placeholder(i);
+    });
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, function(m, tex) {
         var i = mathBlocks.length;
         mathBlocks.push({ tex: tex.trim(), display: true });
         return placeholder(i);
     });
-    // 行内公式
+    // 行内公式：$...$
     text = text.replace(/\$([^\$\n]+?)\$/g, function(m, tex) {
         var i = mathBlocks.length;
         mathBlocks.push({ tex: tex.trim(), display: false });
